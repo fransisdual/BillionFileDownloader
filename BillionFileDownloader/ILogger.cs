@@ -23,7 +23,8 @@ namespace BillionFileDownloader
         public static ILogger Source
         {
             get
-            {
+            { if (source == null)
+                    source = new ConsoleLogger();
                 return source;
             }
 
@@ -44,4 +45,5 @@ namespace BillionFileDownloader
             Console.WriteLine(errorMessage);
         }
     }
+
 }

@@ -9,7 +9,7 @@ namespace BillionFileDownloader
     {
         static void Main(string[] args)
         {
-
+            // Logger initialization
             Logger.Source = new ConsoleLogger();
 
             string filePath = Directory.GetCurrentDirectory() + "\\FileList.txt";
