@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace BillionFileDownloader
 {
-    interface IRepository
+    class DownloadManager
     {
-
-        public IList<IRepositoryObject> GetRepositoryObjects();
+        FilesDBManager DBManager { get; set; }
 
 
     }

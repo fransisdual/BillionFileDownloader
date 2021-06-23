@@ -8,28 +8,74 @@ using System.Threading.Tasks;
 
 namespace BillionFileDownloader
 {
-    class SimpleFileDownloader : IFileDownloader
+    class SimpleFileDownloader : IFileDownloadManager
     {
-
-        public IRepository Repository { get; }
+        bool cancelled = false;
+        FilesDBManager dBManager;
+        List<FileObject> filesToDownloadBuffer;
+        IFileDownloader fileDownloader;
 
         public string FileSavePath { get; }
 
-        public SimpleFileDownloader(IRepository repository, string fileSavePath)
+        public SimpleFileDownloader(FilesDBManager dBManager, IFileDownloader fileDownloader, string fileSavePath)
         {
-            Repository = repository;
+            this.dBManager = dBManager;
             FileSavePath = fileSavePath;
+            this.fileDownloader = fileDownloader;
+            filesToDownloadBuffer = dBManager.GetNextFilesList();
         }
 
-        public void Download()
+        public void Start()
         {
             Directory.CreateDirectory(FileSavePath);
 
-            foreach(var repositoryObject in Repository.GetRepositoryObjects())
+            FileObject fileObject = GetNextFileObject();
+
+            while (fileObject != null)
             {
-                repositoryObject.Download(FileSavePath);
+                if (cancelled)
+                    break;
+
+                fileDownloader.Download(fileObject, FileSavePath);
+
+                if (fileObject.IsProcessed)
+                    dBManager.SetFileObjectDownloaded(fileObject);
+                if (fileObject.IsFaulted)
+                    dBManager.SetFileDownloadIsFaulted(fileObject, fileObject.ErrorMessage);
+
+                fileObject = GetNextFileObject();
             }
 
         }
+
+        public void Stop()
+        {
+            cancelled = true;
+        }
+
+        public FileObject GetNextFileObject()
+        {
+            var remainingFiles = filesToDownloadBuffer.Where(s => s.IsNeedToDownload());
+
+            if (remainingFiles.Count() == 0)
+                filesToDownloadBuffer = dBManager.GetNextFilesList();
+
+            remainingFiles = filesToDownloadBuffer.Where(s => s.IsNeedToDownload());
+
+            if (remainingFiles.Count() == 0)
+                return null;
+
+            var fileobject = filesToDownloadBuffer.Where(s => s.IsNeedToDownload()).First();
+
+            fileobject.SetInDownloading();
+
+            return fileobject;
+        }
+
+        void SaveFileObjectToDatabase(FileObject fileObject)
+        {
+            dBManager.SetFileObjectDownloaded(fileObject);
+        }
+
     }
 }

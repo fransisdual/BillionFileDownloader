@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace BillionFileDownloader
 {
-    public interface IRepositoryObject
+    public interface IFileDownloadManager
     {
 
-        public string getStringPath();
+        public FileObject GetNextFileObject();
+        public void Start();
+        public void Stop();
 
-        public bool Download(string savePath);
     }
 }

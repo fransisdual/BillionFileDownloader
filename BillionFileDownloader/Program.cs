@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +12,13 @@ namespace BillionFileDownloader
     {
         static void Main(string[] args)
         {
+
+            FilesDBManager filesDBManager = new FilesDBManager("Data Source=localhost;Initial Catalog=BillionFileDownloader;Integrated Security=True");
+
+            filesDBManager.SetAllDownloadingFilesToDownload();
+            filesDBManager.SetAllFilesToDownload();
+
+            WebClientDownloader webClientDownloader = new WebClientDownloader();
             // Logger initialization
             Logger.Source = new ConsoleLogger();
 
@@ -19,17 +29,26 @@ namespace BillionFileDownloader
 
             if (isFileExist)
             {
-                SimpleWebRepository simpleRepository = new SimpleWebRepository(filePath);
 
+                IFileDownloadManager fileDownloadManager;
+                //Console.WriteLine("Start consistently downloading\n");
 
-                Console.WriteLine("Start consistently downloading\n");
-                IFileDownloader fileDownloader = new SimpleFileDownloader(simpleRepository, savePathDirectory);
-                fileDownloader.Download();
+                //
+                //fileDownloadManager = new SimpleFileDownloader(filesDBManager, webClientDownloader, savePathDirectory);
+                //fileDownloadManager.Start();
+
+                //Console.WriteLine("Downloading is finished\n");
+
+                Console.WriteLine("Start multi thread downloading\n");
+                fileDownloadManager = new MultiThreadFileDownloader(filesDBManager, webClientDownloader, savePathDirectory, 4);
+                fileDownloadManager.Start();
                 Console.WriteLine("Downloading is finished\n");
 
+                filesDBManager.SetAllFilesToDownload();
+
                 Console.WriteLine("Start parralel downloading\n");
-                fileDownloader = new MultiThreadFileDownloader(simpleRepository, savePathDirectory);
-                fileDownloader.Download();
+                fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory);
+                fileDownloadManager.Start();
                 Console.WriteLine("Downloading is finished\n");
 
             }
@@ -38,6 +57,6 @@ namespace BillionFileDownloader
 
         }
 
-
+        
     }
 }

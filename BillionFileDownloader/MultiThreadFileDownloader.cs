@@ -3,55 +3,108 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BillionFileDownloader
 {
-    class MultiThreadFileDownloader : IFileDownloader
+    public class MultiThreadFileDownloader : IFileDownloadManager
     {
-        int numberOfThreads = 4;
 
-        public IRepository Repository { get; }
+        object lockObject;
 
-        List<IRepositoryObject> repositoryObjects;
+        FilesDBManager dBManager;
+        List<FileObject> filesToDownloadBuffer;
+        IFileDownloader fileDownloader;
+
+        List<Thread> threads;
+
+        int numberOfTasks = 4;
 
         public string FileSavePath { get; }
 
-        public MultiThreadFileDownloader(IRepository repository, string fileSavePath)
+        public MultiThreadFileDownloader(FilesDBManager dBManager, IFileDownloader fileDownloader, string fileSavePath, int numberOfTasks)
         {
-            Repository = repository;
+            this.dBManager = dBManager;
             FileSavePath = fileSavePath;
+            this.fileDownloader = fileDownloader;
+            filesToDownloadBuffer = dBManager.GetNextFilesList();
+            this.numberOfTasks = numberOfTasks;
 
-            repositoryObjects = repository.GetRepositoryObjects().ToList();
+            lockObject = new object();
         }
 
-        public void Download()
+        public void Start()
         {
-            var tasks = new List<Task>();
-            int filesCount = repositoryObjects.Count;
+            threads = new List<Thread>();
 
-            Directory.CreateDirectory(FileSavePath);
-
-            foreach (var repositoryObject in Repository.GetRepositoryObjects())
+            for (int i = 0; i < numberOfTasks; i++)
             {
-                tasks.Add(Task.Run(() => repositoryObject.Download(FileSavePath)));
-
-                //repositoryObject.Download(FileSavePath);
+                var thread = new Thread(DownloadingProcess);
+                thread.Start();
+                threads.Add(thread);
             }
 
-            Task t = Task.WhenAll(tasks);
-            
-            try
+            for (int i = 0; i < threads.Count; i++)
             {
-                t.Wait();
+                threads[i].Join();
             }
-            catch { }
-
-            if (t.Status == TaskStatus.RanToCompletion)
-                Logger.Source.Log("All files are downloaded.");
-            else if (t.Status == TaskStatus.Faulted)
-                Logger.Source.LogError("Some files downloading is failed");
         }
 
+
+        void DownloadingProcess()
+        {
+            FileObject fileObject;
+            fileObject = GetNextFileObject();
+
+            while (fileObject != null)
+            {
+
+                fileDownloader.Download(fileObject, FileSavePath);
+
+                lock (lockObject)
+                {
+                    if (fileObject.IsProcessed)
+                        dBManager.SetFileObjectDownloaded(fileObject);
+                    if (fileObject.IsFaulted)
+                        dBManager.SetFileDownloadIsFaulted(fileObject, fileObject.ErrorMessage);
+                }
+
+                fileObject = GetNextFileObject();
+
+                Console.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId);
+            }
+
+
+        }
+
+        public FileObject GetNextFileObject()
+        {
+            lock (lockObject)
+            {
+                var remainingFiles = filesToDownloadBuffer.Where(s => s.IsNeedToDownload());
+
+                if (remainingFiles.Count() == 0)
+                    filesToDownloadBuffer = dBManager.GetNextFilesList();
+
+                remainingFiles = filesToDownloadBuffer.Where(s => s.IsNeedToDownload());
+
+                if (remainingFiles.Count() == 0)
+                    return null;
+
+                var fileobject = filesToDownloadBuffer.Where(s => s.IsNeedToDownload()).First();
+
+                fileobject.SetInDownloading();
+
+                return fileobject;
+            }
+
+        }
+
+
+        public void Stop()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

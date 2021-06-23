@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace BillionFileDownloader
 {
-    interface IFileDownloader
+    public interface IFileDownloader
     {
-        public void Download();
+        public void Download(FileObject fileObject, string savePath);
     }
 }
