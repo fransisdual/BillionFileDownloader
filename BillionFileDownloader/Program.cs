@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,6 +31,9 @@ namespace BillionFileDownloader
             if (isFileExist)
             {
 
+
+
+
                 IFileDownloadManager fileDownloadManager;
                 //Console.WriteLine("Start consistently downloading\n");
 
@@ -46,10 +50,16 @@ namespace BillionFileDownloader
 
                 filesDBManager.SetAllFilesToDownload();
 
+
+                DBEnum files = new DBEnum();
+
                 Console.WriteLine("Start parralel downloading\n");
-                fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory);
+                //fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory);
+                fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files.ToList());
                 fileDownloadManager.Start();
                 Console.WriteLine("Downloading is finished\n");
+
+
 
             }
 

@@ -15,10 +15,17 @@ namespace BillionFileDownloader
         public ParallelDownloadManager(FilesDBManager dBManager, IFileDownloader fileDownloader, string fileSavePath)
         {
             this.dBManager = dBManager;
-            //this.filesToDownloadBuffer = filesToDownloadBuffer;
             this.fileDownloader = fileDownloader;
             FileSavePath = fileSavePath;
             filesToDownloadBuffer = dBManager.GetNextFilesList();
+        }
+
+        public ParallelDownloadManager(FilesDBManager dBManager, IFileDownloader fileDownloader, string fileSavePath, List<FileObject> filesToDownload)
+        {
+            this.dBManager = dBManager;
+            this.fileDownloader = fileDownloader;
+            FileSavePath = fileSavePath;
+            filesToDownloadBuffer = filesToDownload;
         }
 
         public string FileSavePath { get; }
@@ -33,10 +40,8 @@ namespace BillionFileDownloader
             while (filesToDownloadBuffer.Count>0)
             {
                 filesToDownloadBuffer.AsParallel().ForAll(DownloadingProcess);
-
                 filesToDownloadBuffer = dBManager.GetNextFilesList();
             }
-
         }
 
         public void Stop()
