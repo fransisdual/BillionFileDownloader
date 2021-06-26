@@ -31,7 +31,13 @@ namespace BillionFileDownloader
             if (isFileExist)
             {
 
-
+                GuidsEnum guids = new GuidsEnum();
+                //IEnumerable<Guid> guids1 = guids.getIDs();
+                string a = guids?.ToString();
+                foreach (var guid in guids)
+                {
+                    Console.WriteLine(guid);
+                }
 
 
                 IFileDownloadManager fileDownloadManager;
@@ -51,14 +57,27 @@ namespace BillionFileDownloader
                 filesDBManager.SetAllFilesToDownload();
 
 
-                DBEnum files = new DBEnum();
+
 
                 Console.WriteLine("Start parralel downloading\n");
-                //fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory);
-                fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files.ToList());
+                fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory);
+                //fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files.ToList());
                 fileDownloadManager.Start();
                 Console.WriteLine("Downloading is finished\n");
 
+
+                filesDBManager.SetAllFilesToDownload();
+                DBEnum files = new DBEnum();
+
+                var ids = files.getIDs();
+                Console.WriteLine("Start enum downloading\n");
+                fileDownloadManager = new EnumDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files);
+                //fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files.ToList());
+                fileDownloadManager.Start();
+                Console.WriteLine("Downloading is finished\n");
+
+
+                filesDBManager.SetAllFilesToDownload();
 
 
             }

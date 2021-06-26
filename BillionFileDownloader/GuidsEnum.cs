@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace BillionFileDownloader
 {
-    class DBEnum : IEnumerable<FileObject>, IDisposable
+    class GuidsEnum : IEnumerable
     {
         SqlConnection connection;
         string sqlConnectionString = "Data Source=localhost;Initial Catalog=BillionFileDownloader;Integrated Security=True";
         IDataReader reader;
 
-        public DBEnum()
+        public GuidsEnum()
         {
             connection = new SqlConnection(sqlConnectionString);
             SqlCommand command = new SqlCommand($"Select * from files where statusId = 1");
@@ -30,13 +30,18 @@ namespace BillionFileDownloader
             reader.Close();
         }
 
-        public IEnumerator<FileObject> GetEnumerator()
+        public IEnumerator<Guid> GetEnumerator()
         {
-            while (reader.Read())
+            using (connection = new SqlConnection(sqlConnectionString))
             {
-                yield return GetNextFileObject();
+                while (reader.Read())
+                {
+                    yield return reader.GetGuid(1);
+                }
+                yield break;
             }
-            yield break;
+
+
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -44,26 +49,9 @@ namespace BillionFileDownloader
             return GetEnumerator();
         }
 
-        FileObject GetNextFileObject()
-        {
-            FileObject fileProxy = new FileObject();
-
-            string dbData = "";
-            for (int i = 0; i < reader.FieldCount; i++)
-                dbData += reader[i] + " | ";
-
-            fileProxy.Id = reader.GetInt32(0);
-            fileProxy.FilePath = reader.GetString(2);
-            fileProxy.Guid = reader.GetGuid(1);
-            fileProxy.StatusId = reader.GetInt32(3);
-
-            return fileProxy;
-        }
-
         public IEnumerable<Guid> getIDs()
         {
-            return this.Select(s => s.Guid);
+            return (IEnumerable<Guid>)this;
         }
-
     }
 }
