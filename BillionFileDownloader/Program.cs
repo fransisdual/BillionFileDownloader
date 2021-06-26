@@ -69,13 +69,15 @@ namespace BillionFileDownloader
                 filesDBManager.SetAllFilesToDownload();
                 DBEnum files = new DBEnum();
 
-                var ids = files.getIDs();
+                //var ids = files.getIDs();
                 Console.WriteLine("Start enum downloading\n");
                 fileDownloadManager = new EnumDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files);
                 //fileDownloadManager = new ParallelDownloadManager(filesDBManager, webClientDownloader, savePathDirectory, files.ToList());
                 fileDownloadManager.Start();
                 Console.WriteLine("Downloading is finished\n");
 
+                foreach(var file in files)
+                { Console.WriteLine(file.Id); }
 
                 filesDBManager.SetAllFilesToDownload();
 
